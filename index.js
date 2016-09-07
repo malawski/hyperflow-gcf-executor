@@ -15,6 +15,8 @@ exports.hyperflow_executor = function (req, res) {
   var bucket_name = req.body.options.bucket;
   var prefix = req.body.options.prefix
 
+  var t_start = Date.now();
+  var t_end;
 
   console.log('executable: ' + executable);
   console.log('args:       ' + args);
@@ -43,10 +45,10 @@ function download(callback) {
  
     // Download a file from your bucket. 
     bucket.file(file_name).download({
-      destination: file_name
+      destination: '/tmp/' + file_name
     }, function(err) {
       if( err ) {
-        console.log("Error downloading file " + full_path);
+        console.error("Error downloading file " + full_path);
 	callback(err);
       } else {
         console.log("Downloaded file " + full_path);
@@ -55,7 +57,7 @@ function download(callback) {
     });
     }, function(err){
       if( err ) {
-        console.log('A file failed to process');
+        console.error('A file failed to process');
         callback('Error downloading')
       } else {
         console.log('All files have been downloaded successfully');
@@ -69,11 +71,11 @@ function execute(callback) {
   var proc_name = __dirname + '/' + executable // use __dirname so we don't need to set env[PATH] and pass env 
 
   console.log('spawning ' + proc_name);
-  process.env.PATH = '.'; // add . to PATH since e.g. in Montage mDiffFit calls external executables
-  var proc = spawn(proc_name, args);
+  process.env.PATH = '.:'+ __dirname; // add . and __dirname to PATH since e.g. in Montage mDiffFit calls external executables
+  var proc = spawn(proc_name, args, {cwd: '/tmp'});
 
   proc.on('error', function (code) {
-        console.log('error!!'  + executable + JSON.stringify(code));
+        console.error('error!!'  + executable + JSON.stringify(code));
 //	callback(JSON.stringify(code))
     });
 
@@ -109,10 +111,10 @@ function upload(callback) {
     var bucket = gcs.bucket(bucket_name );
  
     // Upload a file to your bucket. 
-    bucket.upload(__dirname + '/' + file_name, {destination:  prefix + "/" + file_name}, function(err) {
+    bucket.upload('/tmp/' + file_name, {destination:  prefix + "/" + file_name}, function(err) {
       if( err ) {
-        console.log("Error uploading file " + full_path);
-        console.log(err);
+        console.error("Error uploading file " + full_path);
+        console.error(err);
 	callback(err);
       } else {
         console.log("Uploaded file " + full_path);
@@ -121,7 +123,7 @@ function upload(callback) {
     });
 }, function(err){
       if( err ) {
-        console.log('A file failed to process');
+        console.error('A file failed to process');
         callback('Error uploading')
       } else {
         console.log('All files have been uploaded successfully');
@@ -137,11 +139,13 @@ async.waterfall([
   upload
 ], function (err, result) {
       if( err ) {
-        console.log('Error: ' + err);
+        console.error('Error: ' + err);
         res.status(400).send('Bad Request ' + JSON.stringify(code));
       } else {
         console.log('Success');
-        res.send('My GCF Function exit: ' + executable + args);    
+        t_end = Date.now();
+	var duration = t_end-t_start;
+        res.send('GCF Function exit: start ' + t_start + ' end ' + t_end + ' duration ' + duration + ' ms, executable: ' + executable + ' args: ' + args);    
       }
 })
 
