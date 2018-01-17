@@ -1,7 +1,7 @@
 var projectId = process.env.GCLOUD_PROJECT; // E.g. 'grape-spaceship-123' 
 
 var spawn = require('child_process').spawn;
-var gcloud = require('gcloud');
+var gcloud = require('google-cloud');
 var async = require('async');
 
 
@@ -49,7 +49,8 @@ function download(callback) {
     }, function(err) {
       if( err ) {
         console.error("Error downloading file " + full_path);
-	callback(err);
+        console.error(err);
+	    callback(err);
       } else {
         console.log("Downloaded file " + full_path);
         callback();
@@ -140,7 +141,7 @@ async.waterfall([
 ], function (err, result) {
       if( err ) {
         console.error('Error: ' + err);
-        res.status(400).send('Bad Request ' + JSON.stringify(code));
+        res.status(400).send('Bad Request ' + JSON.stringify(err));
       } else {
         console.log('Success');
         t_end = Date.now();
