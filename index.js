@@ -41,10 +41,10 @@ function download(callback) {
 
 
     // Reference an existing bucket. 
-    var bucket = gcs.bucket(bucket_name + "/" +  prefix );
+    var bucket = gcs.bucket(bucket_name);
  
     // Download a file from your bucket. 
-    bucket.file(file_name).download({
+    bucket.file(prefix + "/" + file_name).download({
       destination: '/tmp/' + file_name
     }, function(err) {
       if( err ) {
